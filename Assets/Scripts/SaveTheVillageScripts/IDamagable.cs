@@ -10,8 +10,7 @@ public interface IDamagable
 
     public event Action Death;
 
-    public void DoUnderAttack();
     public void GetDamage(float rangeOfDamage);
     public void Die();
-    public void Restart();
+    public void RestartAfterDie();
 }

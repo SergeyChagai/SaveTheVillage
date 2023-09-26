@@ -8,8 +8,13 @@ using UnityEngine.UIElements;
 
 public class Timer : MonoBehaviour
 {
-    public float TimeRange;
-    public int CyclesForWave;
+    public float TimeRange { get; set; }
+    public float CyclesForWave
+    {
+        get => _cyclesForWave - _cyclesCounter;
+    }
+
+    private int _cyclesForWave;
     public event Action IteractionChanged;
     public event Action EagleMustCryNow;
     public event Action WaveMustCome;
@@ -42,12 +47,13 @@ public class Timer : MonoBehaviour
             _timerImage.fillAmount = value / TimeRange;
             if (_timerTime >= TimeRange)
             {
-                IteractionChanged?.Invoke();
                 _cyclesCounter++;
-                if (_cyclesCounter >= CyclesForWave)
+                IteractionChanged?.Invoke();
+                if (_cyclesCounter >= _cyclesForWave)
                 {
                     _cyclesCounter = 0;
                     WaveMustCome?.Invoke();
+                    StopTimer();
                 }
                 ResetTimer();
             }
@@ -62,7 +68,10 @@ public class Timer : MonoBehaviour
 
     private void Start()
     {
+        var properties = GameObject.Find(nameof(MyGameProperties)).GetComponent<MyGameProperties>();
         _timerImage = GetComponent<UnityEngine.UI.Image>();
+        TimeRange = properties.TimeRange;
+        _cyclesForWave = properties.CyclesForWave;
     }
 
     void Update()

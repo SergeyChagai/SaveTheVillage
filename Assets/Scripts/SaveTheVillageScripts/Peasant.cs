@@ -3,9 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Peasant : MonoBehaviour, IDamagable
+public class Peasant : MonoBehaviour, IDamagable, IComparable
 {
     public float TotalHealth;
+    public int Row;
 
     private float _actualHealth;
     public float ActualHealth
@@ -75,15 +76,21 @@ public class Peasant : MonoBehaviour, IDamagable
         transform.gameObject.SetActive(false);
     }
 
-    public void Restart()
+    public void RestartAfterDie()
     {
         _bodyCollider.enabled = true;
         PeasantState = UnitState.Idle;
         transform.gameObject.SetActive(true);
     }
 
-    public void DoUnderAttack()
+    public void SetAttackState()
     {
         PeasantState = UnitState.Hurt;
+    }
+
+    public int CompareTo(object obj)
+    {
+        if (obj == null || !(obj is Peasant)) return -1;
+        return Row.CompareTo(((Peasant)obj).Row);
     }
 }

@@ -25,6 +25,7 @@ public class Weapon : MonoBehaviour
         {
             var enemy = collision.transform.parent.gameObject.transform.parent.GetComponent<IDamagable>();
             var soldier = _soldier.GetComponent<Soldier>();
+            if (!soldier.CheckTheEnemy(collision.transform.parent.gameObject.transform.parent.gameObject)) return;
             if (enemy.ActualHealth <= 0)
             {
                 soldier.SoldierState = UnitState.Walk;

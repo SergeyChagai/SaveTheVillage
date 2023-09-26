@@ -38,6 +38,14 @@ public class Army : MonoBehaviour
         _isBattle = true;
     }
 
+    public void Restart()
+    {
+        foreach (Soldier soldier in _units)
+        {
+            soldier.Restart();
+        }
+    }
+
     private void Update()
     {
        

@@ -30,6 +30,11 @@ public class CombatManager : MonoBehaviour
 
     }
 
+    public void BattleFinished()
+    {
+        _isBattle = false;
+    }
+
     // Update is called once per frame
     void Update()
     {

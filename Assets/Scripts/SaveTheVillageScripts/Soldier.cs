@@ -1,14 +1,17 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class Soldier : MonoBehaviour, IDamagable
+public class Soldier : MonoBehaviour, IDamagable, IComparable
 {
     public float Speed;
     public float Strenght;
     public float TotalHealth;
+    public int Row;
     public bool HasEnemy
     {
         get => _enemy != null;
@@ -51,26 +54,22 @@ public class Soldier : MonoBehaviour, IDamagable
 
     private void Awake()
     {
-        Role = Role.Soldier;
-        var weapon = transform.GetChild(0).GetChild(2).GetChild(0).GetComponent<BoxCollider2D>();
-        _bodyCollider = GetComponent<BoxCollider2D>();
-        _colliders = GetComponentsInChildren<BoxCollider2D>();
-        _animator = GetComponent<Animator>();
+        //Role = Role.Soldier;
+        //var weapon = transform.GetChild(0).GetChild(2).GetChild(0).GetComponent<BoxCollider2D>();
         SoldierState = _soldierState;
         _actualHealth = TotalHealth;
         _startPosition = transform.position;
+        _animator = GetComponent<Animator>();
+        _colliders = GetComponentsInChildren<BoxCollider2D>();
+        _bodyCollider = GetComponent<BoxCollider2D>();
     }
 
-    private void Start()
-    {
-
-    }
 
     private void Update()
     {
         if (SoldierState == UnitState.Walk)
         {
-            var direction = new Vector2(Speed * Time.deltaTime * (Role == Role.Soldier ? 1 : -1), 0);
+            var direction = new Vector2(Speed * Time.deltaTime, 0);
             transform.Translate(direction);
         }
     }
@@ -83,24 +82,10 @@ public class Soldier : MonoBehaviour, IDamagable
             && !HasEnemy && !collision.gameObject.GetComponent<IDamagable>().HasEnemy)
         {
             SetEnemy(collision.gameObject);
-            DoUnderAttack();
-            collision.gameObject.GetComponent<Soldier>()?.SetEnemy(collision.gameObject);
-            collision.gameObject.GetComponent<IDamagable>().DoUnderAttack();
+            collision.gameObject.GetComponent<Soldier>()?.SetEnemy(transform.gameObject);
         }
     }
 
-    private void OnCollisionStay2D(Collision2D collision)
-    {
-
-    }
-
-    private void OnCollisionExit2D(Collision2D collision)
-    {
-        if (collision != null && collision.gameObject != null)
-        {
-            ;
-        }
-    }
     public void Die()
     {
         _bodyCollider.enabled = false;
@@ -109,8 +94,7 @@ public class Soldier : MonoBehaviour, IDamagable
             coll.enabled = false;
         }
         SoldierState = UnitState.Die;
-        Death?.Invoke();
-        //transform.gameObject.SetActive(false);
+        UnsetEnemy();
     }
 
     public void GetDamage(float rangeOfDamage)
@@ -118,9 +102,38 @@ public class Soldier : MonoBehaviour, IDamagable
         ActualHealth -= rangeOfDamage;
     }
 
+    // Activated as animation event on Attack
     public void ReloadStrength()
     {
         Strenght = 1;
+    }
+
+    // Activated as animation event on Die
+    public void RestartAfterDie()
+    {
+        SoldierState = UnitState.Idle;
+        Restart();
+        transform.gameObject.SetActive(false);
+        Death?.Invoke();
+    }
+
+    public void Restart()
+    {
+        if (!isActiveAndEnabled) return;
+
+        _bodyCollider.enabled = true;
+        foreach (var coll in _colliders)
+        {
+            coll.enabled = true;
+        }
+        SoldierState = UnitState.Idle;
+        Strenght = 0;
+        transform.position = _startPosition;
+    }
+
+    public bool CheckTheEnemy(GameObject potentialEnemy)
+    {
+        return _enemy == potentialEnemy;
     }
 
     private void SetEnemy(GameObject enemy)
@@ -129,13 +142,21 @@ public class Soldier : MonoBehaviour, IDamagable
         {
             _enemy = enemy;
             _enemy.GetComponent<IDamagable>().Death += OnEnemyDeath;
+            SoldierState = UnitState.Attack;
         }
+    }
+
+    private void UnsetEnemy()
+    {
+        _enemy.GetComponent<IDamagable>().Death -= OnEnemyDeath;
+        _enemy = null;
     }
 
     private void OnEnemyDeath()
     {
         if (_enemy.GetComponent<IDamagable>() is Soldier && ActualHealth > 0)
         {
+            _enemy.GetComponent<IDamagable>().Death -= OnEnemyDeath;
             Die();
             return;
         }
@@ -143,21 +164,10 @@ public class Soldier : MonoBehaviour, IDamagable
         SoldierState = UnitState.Walk;
     }
 
-    public void Restart()
+    public int CompareTo(object obj)
     {
-        _bodyCollider.enabled = true;
-        foreach (var coll in _colliders)
-        {
-            coll.enabled = true;
-        }
-        SoldierState = UnitState.Idle;
-        transform.position = _startPosition;
-        transform.gameObject.SetActive(true);
-    }
-
-    public void DoUnderAttack()
-    {
-        SoldierState = UnitState.Attack;
+        if (obj == null || !(obj is Soldier)) return -1;
+        return Row.CompareTo(((Soldier)obj).Row);
     }
 }
 
